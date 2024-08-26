@@ -78,13 +78,19 @@ jobs:
       - name: Build with Maven Wrapper
         run: ./mvnw -B package
 
-      - name: Set up Docker and Docker Compose
+      - name: Set up Docker
         uses: docker/setup-buildx-action@v2
 
       - name: Install Docker Compose
-        uses: docker/compose-action@v2
-        with:
-          version: 2.19.2
+        run: |
+          # Download Docker Compose
+          sudo wget "https://github.com/docker/compose/releases/download/v2.19.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          
+          # Make Docker Compose executable
+          sudo chmod +x /usr/local/bin/docker-compose
+
+          # Verify Docker Compose installation
+          docker-compose --version
 
       - name: Log in to Docker Hub
         run: echo "${{ secrets.DOCKER_PASSWD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
@@ -93,6 +99,7 @@ jobs:
         run: |
           docker-compose build
           docker-compose push
+
 
   deploy:
     runs-on: ubuntu-latest
