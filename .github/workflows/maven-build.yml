@@ -106,7 +106,7 @@ jobs:
           sudo systemctl enable docker
 
           # Add the current user to the Docker group
-          sudo usermod -aG docker aishwar
+          sudo usermod -aG docker $USER
 
           # Install Docker Compose
           sudo curl -L "https://github.com/docker/compose/releases/download/v2.19.2/docker-compose-$(uname -s)-$(uname -m)" -o /home/aishwar/bin/docker-compose
