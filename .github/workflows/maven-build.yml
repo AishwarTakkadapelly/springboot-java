@@ -28,10 +28,68 @@ jobs:
         run: chmod +x ./mvnw
 
       - name: Build with Maven Wrapper
+        run: ./mvnw -B compile
+
+  test:
+    runs-on: ubuntu-latest
+    needs: build  # Only run if the build job succeeds
+    strategy:
+      matrix:
+        java: [ '17' ]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ matrix.java }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ matrix.java }}
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Set permissions for Maven Wrapper
+        run: chmod +x ./mvnw
+
+      - name: Run Tests
+        run: ./mvnw test
+
+  package:
+    runs-on: ubuntu-latest
+    needs: test  # Only run if the test job succeeds
+    strategy:
+      matrix:
+        java: [ '17' ]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ matrix.java }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ matrix.java }}
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Set permissions for Maven Wrapper
+        run: chmod +x ./mvnw
+
+      - name: Build with Maven Wrapper
         run: ./mvnw -B package
+
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Build Docker image
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/springboot .
+
+      - name: Push Docker image
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/springboot:latest
   
   deploy:
     runs-on: ubuntu-latest
+    needs: package  # Only run if the package job succeeds
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -56,15 +114,14 @@ jobs:
 
             # Pull Docker image and run container
             echo "Pulling Docker image..."
-            sudo docker pull takkadapelly/my-python-app
+            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/springboot
 
             echo "Stopping and removing old container..."
-            sudo docker stop my-app || true
-            sudo docker rm my-app || true
+            sudo docker stop springboot || true
+            sudo docker rm springboot || true
 
             echo "Running new container..."
-            sudo docker run -d -p 5000:5000 --name my-app takkadapelly/my-python-app:latest
+            sudo docker run -d -p 8080:8080 --name springboot ${{ secrets.DOCKER_USERNAME }}/springboot:latest
           timeout: 30s
           command_timeout: 10m
           debug: false
-      
