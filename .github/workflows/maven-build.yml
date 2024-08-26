@@ -21,7 +21,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: ${{ matrix.java }}
-          distribution: 'temurin'  # Updated to 'temurin' for better support
+          distribution: 'temurin'
           cache: maven
 
       - name: Set permissions for Maven Wrapper
@@ -32,7 +32,7 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
-    needs: build  # Only run if the build job succeeds
+    needs: build
     strategy:
       matrix:
         java: [ '17' ]
@@ -53,50 +53,50 @@ jobs:
 
       - name: Run Tests
         run: ./mvnw test
-  
+
   package:
-  runs-on: ubuntu-latest
-  needs: test
-  strategy:
-    matrix:
-      java: ['17']
+    runs-on: ubuntu-latest
+    needs: test
+    strategy:
+      matrix:
+        java: ['17']
 
-  steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up JDK ${{ matrix.java }}
-      uses: actions/setup-java@v4
-      with:
-        java-version: ${{ matrix.java }}
-        distribution: 'temurin'
-        cache: maven
+      - name: Set up JDK ${{ matrix.java }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ matrix.java }}
+          distribution: 'temurin'
+          cache: maven
 
-    - name: Set permissions for Maven Wrapper
-      run: chmod +x ./mvnw
+      - name: Set permissions for Maven Wrapper
+        run: chmod +x ./mvnw
 
-    - name: Build with Maven Wrapper
-      run: ./mvnw -B package
+      - name: Build with Maven Wrapper
+        run: ./mvnw -B package
 
-    - name: Set up Docker
-      uses: docker/setup-buildx-action@v2
+      - name: Set up Docker and Docker Compose
+        uses: docker/setup-buildx-action@v2
 
-    - name: Set up Docker Compose
-      uses: docker/compose-action@v2
-      with:
-        version: 2.19.2
+      - name: Install Docker Compose
+        uses: docker/compose-action@v2
+        with:
+          version: 2.19.2
 
-    - name: Log in to Docker Hub
-      run: echo "${{ secrets.DOCKER_PASSWD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-    - name: Build and Push Docker image using docker-compose
-      run: |
-        docker-compose build
-        docker-compose push
-  
+      - name: Build and Push Docker image using docker-compose
+        run: |
+          docker-compose build
+          docker-compose push
+
   deploy:
     runs-on: ubuntu-latest
-    needs: package  # Only run if the package job succeeds
+    needs: package
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
