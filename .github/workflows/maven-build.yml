@@ -29,3 +29,42 @@ jobs:
 
       - name: Build with Maven Wrapper
         run: ./mvnw -B package
+  
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v0.1.8
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script: |
+            # Ensure Docker is installed
+            if ! command -v docker &> /dev/null; then
+              echo "Docker not found, installing..."
+              sudo yum update -y
+              sudo yum install -y docker
+              sudo systemctl start docker
+              sudo systemctl enable docker
+              sudo usermod -aG docker aishwar
+            fi
+
+            # Pull Docker image and run container
+            echo "Pulling Docker image..."
+            sudo docker pull takkadapelly/my-python-app
+
+            echo "Stopping and removing old container..."
+            sudo docker stop my-app || true
+            sudo docker rm my-app || true
+
+            echo "Running new container..."
+            sudo docker run -d -p 5000:5000 --name my-app takkadapelly/my-python-app:latest
+          timeout: 30s
+          command_timeout: 10m
+          debug: false
+      
