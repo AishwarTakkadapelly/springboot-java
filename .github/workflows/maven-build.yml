@@ -54,9 +54,10 @@ jobs:
       - name: Run Tests
         run: ./mvnw test
 
+  
   package:
     runs-on: ubuntu-latest
-    needs: test  # Only run if the test job succeeds
+    needs: test
     strategy:
       matrix:
         java: ['17']
@@ -78,41 +79,10 @@ jobs:
       - name: Build with Maven Wrapper
         run: ./mvnw -B package
 
-      - name: Set up Docker and Docker Compose
+      - name: Install Docker Compose
         run: |
-          # Remove any existing Docker packages to avoid conflicts
-          sudo apt-get remove -y docker docker-engine docker.io containerd runc
-
-          # Update package lists
-          sudo apt-get update
-          
-          # Install required packages
-          sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
-
-          # Add Docker's official GPG key
-          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-
-          # Set up the Docker stable repository
-          sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-
-          # Update package lists again
-          sudo apt-get update
-
-          # Install Docker Engine and related packages
-          sudo apt-get install -y docker-ce docker-ce-cli containerd.io
-
-          # Start and enable Docker service
-          sudo systemctl start docker
-          sudo systemctl enable docker
-
-          # Install Docker Compose in /usr/local/bin
-          sudo wget "https://github.com/docker/compose/releases/download/v2.19.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-          
-          # Ensure the binary is executable
+          sudo curl -L "https://github.com/docker/compose/releases/download/v2.19.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
           sudo chmod +x /usr/local/bin/docker-compose
-          
-          # Verify Docker and Docker Compose installations
-          docker --version
           docker-compose --version
 
       - name: Log in to Docker Hub
