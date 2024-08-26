@@ -1,126 +1,25 @@
-name: Java CI with Maven
-
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        java: [ '17' ]
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK ${{ matrix.java }}
-        uses: actions/setup-java@v4
-        with:
-          java-version: ${{ matrix.java }}
-          distribution: 'temurin'  # Updated to 'temurin' for better support
-          cache: maven
-
-      - name: Set permissions for Maven Wrapper
-        run: chmod +x ./mvnw
-
-      - name: Build with Maven Wrapper
-        run: ./mvnw -B compile
-
-  test:
-    runs-on: ubuntu-latest
-    needs: build  # Only run if the build job succeeds
-    strategy:
-      matrix:
-        java: [ '17' ]
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK ${{ matrix.java }}
-        uses: actions/setup-java@v4
-        with:
-          java-version: ${{ matrix.java }}
-          distribution: 'temurin'
-          cache: maven
-
-      - name: Set permissions for Maven Wrapper
-        run: chmod +x ./mvnw
-
-      - name: Run Tests
-        run: ./mvnw test
-
-  package:
-    runs-on: ubuntu-latest
-    needs: test  # Only run if the test job succeeds
-    strategy:
-      matrix:
-        java: [ '17' ]
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK ${{ matrix.java }}
-        uses: actions/setup-java@v4
-        with:
-          java-version: ${{ matrix.java }}
-          distribution: 'temurin'
-          cache: maven
-
-      - name: Set permissions for Maven Wrapper
-        run: chmod +x ./mvnw
-
-      - name: Build with Maven Wrapper
-        run: ./mvnw -B package
-
-      - name: Log in to Docker Hub
-        run: echo "${{ secrets.DOCKER_PASSWD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-
-      - name: Build and Push Docker image using docker-compose
-        run: |
-          docker-compose build
-          docker-compose push
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: package  # Only run if the package job succeeds
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Deploy to EC2
-        uses: appleboy/ssh-action@v0.1.8
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          port: 22
-          script: |
-            # Ensure Docker is installed
-            if ! command -v docker &> /dev/null; then
-              echo "Docker not found, installing..."
-              sudo yum update -y
-              sudo yum install -y docker
-              sudo systemctl start docker
-              sudo systemctl enable docker
-              sudo usermod -aG docker aishwar
-            fi
-
-            # Pull Docker image and run container
-            echo "Pulling Docker image..."
-            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/springboot
-
-            echo "Stopping and removing old container..."
-            sudo docker stop springboot || true
-            sudo docker rm springboot || true
-
-            echo "Running new container..."
-            sudo docker run -d -p 8080:8080 --name springboot ${{ secrets.DOCKER_USERNAME }}/springboot:latest
-          timeout: 30s
-          command_timeout: 10m
-          debug: false
+services:
+  mysql:
+    image: mysql:8.4
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=
+      - MYSQL_ALLOW_EMPTY_PASSWORD=true
+      - MYSQL_USER=petclinic
+      - MYSQL_PASSWORD=petclinic
+      - MYSQL_DATABASE=petclinic
+    volumes:
+      - "./conf.d:/etc/mysql/conf.d:ro"
+    profiles:
+      - mysql
+  postgres:
+    image: postgres:16.3
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=petclinic
+      - POSTGRES_USER=petclinic
+      - POSTGRES_DB=petclinic
+    profiles:
+      - postgres
