@@ -84,7 +84,7 @@ jobs:
       - name: Install Docker Compose
         run: |
           # Download Docker Compose
-          sudo wget "https://github.com/docker/compose/releases/download/v2.19.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo wget "https://github.com/docker/compose/releases/download/latest/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
           
           # Make Docker Compose executable
           sudo chmod +x /usr/local/bin/docker-compose
