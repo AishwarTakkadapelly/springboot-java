@@ -122,7 +122,7 @@ jobs:
             # Ensure Docker Compose is installed
             if ! command -v docker-compose &> /dev/null; then
               echo "Docker Compose not found, installing..."
-              sudo wget "https://github.com/docker/compose/releases/download/v2.29.2/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
+              sudo wget "https://github.com/docker/compose/releases/download/v2.29.2/docker-compose-linux-x86_64" -O /usr/local/bin/docker-compose
               sudo chmod +x /usr/local/bin/docker-compose
               docker-compose --version
             fi
