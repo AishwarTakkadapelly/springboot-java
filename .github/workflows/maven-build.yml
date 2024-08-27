@@ -55,30 +55,37 @@ jobs:
         run: ./mvnw test
 
   package:
-    runs-on: ubuntu-latest
-    needs: test
-    strategy:
-      matrix:
-        java: ['17']
+  runs-on: ubuntu-latest
+  needs: test
+  strategy:
+    matrix:
+      java: ['17']
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Set up JDK ${{ matrix.java }}
-        uses: actions/setup-java@v4
-        with:
-          java-version: ${{ matrix.java }}
-          distribution: 'temurin'
-          cache: maven
+    - name: Set up JDK ${{ matrix.java }}
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ matrix.java }}
+        distribution: 'temurin'
+        cache: maven
 
-      - name: Set permissions for Maven Wrapper
-        run: chmod +x ./mvnw
+    - name: Set permissions for Maven Wrapper
+      run: chmod +x ./mvnw
 
-      - name: Build with Maven Wrapper
-        run: ./mvnw -B package
+    - name: Build with Maven Wrapper
+      run: ./mvnw -B package
 
-      # Removed Docker steps
+    - name: Build Docker image
+      run: docker build -t ${{ secrets.DOCKER_USERNAME }}/springboot:latest .
+
+    - name: Log in to Docker Hub
+      run: echo "${{ secrets.DOCKER_PASSWD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+    - name: Push Docker image
+      run: docker push ${{ secrets.DOCKER_USERNAME }}/springboot:latest
 
   deploy:
     runs-on: ubuntu-latest
