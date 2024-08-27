@@ -38,9 +38,11 @@ jobs:
         with:
           compose-file: ./docker-compose.yml
           command: build
+          service: springboot  # Replace with your actual service name
 
       - name: Push Docker image with Docker Compose
         uses: adrielcodeco/docker-compose-run-action@v1
         with:
           compose-file: ./docker-compose.yml
           command: push
+          service: springboot  # Replace with your actual service name
